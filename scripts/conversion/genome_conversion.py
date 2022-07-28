@@ -1,3 +1,5 @@
+import sys
+
 """
 Print an error (using fancy coloring) and terminate
 """
@@ -140,16 +142,42 @@ class GenomeManipulator:
         return output_str
 
 if __name__ == '__main__':
+    # Check command line arguments
+    if len(sys.argv) != 5:
+        print('Expects exactly four command line arguments:')
+        print('\t1. -s, -c, or -cf')
+        print('\t\t-s to convert a file with full instruction names into a char string')
+        print('\t\t-c to convert a char string into a file with full instruction names')
+        print('\t\t-cf to convert a file with a char string into a file with full instruction names')
+        print('\t2. The source file (or string if using -c)')
+        print('\t3. The destination file')
+        print('\t4. The instruction set file')
+        exit(1)
+    
+    # Pull in variables from command line arguments
+    flag = sys.argv[1]
+    source = sys.argv[2]
+    dest_filename = sys.argv[3]
+    inst_set_filename = sys.argv[4]
+    
     # Create manipulator
-    manipulator = GenomeManipulator('inst_set.txt')
-    # Convert a symbol list into a name list, write to standard out
-    print(manipulator.convert_chars_to_names('abcdefghijklmnopqrstuvwxyz'))
-    # Convert a symbol list into a name list, write to file 
-    write_to_file('converted_symbol_list.org', \
-            manipulator.convert_chars_to_names('abcdefghijklmnopqrstuvwxyz'))
-    # Load a name-based .org file
-    name_list = split_name_file('ancestor_extended.org')
-    # Convert name list to symbol list, write to standard out
-    print(manipulator.convert_names_to_chars(name_list))
-    # Convert name list to symbol list, write to file 
-    write_to_file('converted_name_list.org', manipulator.convert_names_to_chars(name_list))
+    manipulator = GenomeManipulator(inst_set_filename)
+
+    # Convert genome
+    converted_genome = None
+    if flag == '-s':
+        name_list = split_name_file(source)
+        converted_genome = manipulator.convert_names_to_chars(name_list)
+    elif flag == '-c':
+        converted_genome = manipulator.convert_chars_to_names(source)
+    elif flag == '-cf':
+        input_genome = read_whole_file(source)
+        converted_genome = manipulator.convert_chars_to_names(input_genome)
+    else: 
+        print('Invalid flag:', flag, 'expecting -s, -c, or -cf')
+        exit(1)
+
+    # Save output
+    write_to_file(dest_filename, converted_genome)
+
+    print('Done!')
