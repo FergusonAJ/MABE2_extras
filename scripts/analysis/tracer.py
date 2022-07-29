@@ -145,7 +145,13 @@ class AvidaTracer:
                         if line_parts[idx][-1] == ':' and line_parts[idx][0] != '(' and \
                                 idx < len(line_parts) - 1:
                             head_name = line_parts[idx][:-1]
-                            heads[head_name] = int(line_parts[idx + 1])
+                            head_value = line_parts[idx + 1]
+                            # Account for old style (lacks a space)
+                            if '(' in head_value:
+                                char_idx = head_value.find('(')
+                                head_value = head_value[:char_idx]
+                            heads[head_name] = int(head_value)
+
                             idx += 2
                         else:
                             break
