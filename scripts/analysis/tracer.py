@@ -98,7 +98,7 @@ class AvidaTracer:
         return (x, y)
 
     
-    def set_genome(self, file_name, font, x, y, dx, dy, w, h, angle):
+    def set_genome(self, filename, font, x, y, dx, dy, w, h, angle):
         inst_list = []
         with open(filename, 'r') as fp:
             for line in fp:
