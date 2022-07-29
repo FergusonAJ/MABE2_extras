@@ -312,7 +312,6 @@ if __name__ == '__main__':
 
     arg_idx = 2
     while arg_idx < len(sys.argv):
-        print('[' + str(arg_idx) + ']', sys.argv[arg_idx])
         if sys.argv[arg_idx] == '-a' or sys.argv[arg_idx] == '--avida':
             if arg_idx == len(sys.argv) - 1:
                 print('Error! You must pass the Avida organism\'s trace filename after -a!')
