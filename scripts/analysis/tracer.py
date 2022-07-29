@@ -1,4 +1,5 @@
 import pygame
+import sys
 
 class AvidaTracer:
     def __init__(self, w, h, is_fullscreen, font_name, font_size, font_color = (255,255,255)):
@@ -151,7 +152,6 @@ class AvidaTracer:
                                 char_idx = head_value.find('(')
                                 head_value = head_value[:char_idx]
                             heads[head_name] = int(head_value)
-
                             idx += 2
                         else:
                             break
@@ -235,6 +235,7 @@ class AvidaTracer:
                 if self_state.heads[head_name] != other_state.heads[head_name]:
                     print('Mismatch in head', head_name, 'at step:', step)
                     return step
+        print('No differences found!')
 
 
 
@@ -275,12 +276,96 @@ class OrgState:
         self.heads = heads
         self.regs = regs
 
+
+def print_help():
+    print('')
+    print('First argument must be the filename of the organism\'s genome.')
+    print('  Each line of the file should contain the name of one instruction')
+    print('  Character string genomes not currently supported.')
+    print('')
+    print('Other possible arguments:')
+    print('  -a FILENAME or --avida FILENAME : Load an organism trace output from Avida2')
+    print('  -m FILENAME or --mabe FILENAME  : Load an organism trace output from MABE2')
+    print('  -t INDEX or --trace INDEX: Run an interactive visualization of a trace that has been loaded')
+    print('  -c INDEX INDEX or --compare INDEX INDEX : Compare two traces that have been loaded')
+    print('  -h or --help : Show this help message')
+    print('')
+    print('Note: indices start at 0.')
+
+
+
 if __name__ == '__main__':
     pygame.init()
     is_fullscreen = False
-    tracer = AvidaTracer(1920, 1080, is_fullscreen, 'arial', 24)
-    genome_filename = 'genome.org'
+
+    if len(sys.argv) < 2:
+        print('Expects at least one command line argument: the organism\'s genome')
+        print('Pass -h or --help for more information')
+        exit()
+    if sys.argv[1] == '-h' or sys.argv[1] == '--help':
+        print_help()
+        exit()
+    genome_filename = sys.argv[1]
+
+    tracer_list = []
     inst_font = pygame.font.SysFont('arial', 13)
-    tracer.set_genome(genome_filename, inst_font, 0, 200, 14, 0, 200, 14, 90)
-    tracer.parse_mabe_trace('org_trace.txt')
-    tracer.run()
+
+    arg_idx = 2
+    while arg_idx < len(sys.argv):
+        print('[' + str(arg_idx) + ']', sys.argv[arg_idx])
+        if sys.argv[arg_idx] == '-a' or sys.argv[arg_idx] == '--avida':
+            if arg_idx == len(sys.argv) - 1:
+                print('Error! You must pass the Avida organism\'s trace filename after -a!')
+                exit()
+            trace_filename = sys.argv[arg_idx + 1]
+            tracer = AvidaTracer(1920, 1080, is_fullscreen, 'arial', 24)
+            tracer.set_genome(genome_filename, inst_font, 0, 200, 14, 0, 200, 14, 90)
+            tracer.parse_avida_trace(trace_filename)
+            tracer_list.append(tracer)
+            arg_idx += 1
+            print('Loaded Avida trace as tracer #' + 
+                    str(len(tracer_list) - 1) + ': ' + trace_filename)
+        elif sys.argv[arg_idx] == '-m' or sys.argv[arg_idx] == '--mabe':
+            if arg_idx == len(sys.argv) - 1:
+                print('Error! You must pass the MABE2 organism\'s trace filename after -m!')
+                exit()
+            trace_filename = sys.argv[arg_idx + 1]
+            tracer = AvidaTracer(1920, 1080, is_fullscreen, 'arial', 24)
+            tracer.set_genome(genome_filename, inst_font, 0, 200, 14, 0, 200, 14, 90)
+            tracer.parse_mabe_trace(trace_filename)
+            tracer_list.append(tracer)
+            arg_idx += 1
+            print('Loaded MABE2 trace as tracer #' + 
+                    str(len(tracer_list) - 1) + ': ' + trace_filename)
+        elif sys.argv[arg_idx] == '-t' or sys.argv[arg_idx] == '--trace':
+            if arg_idx == len(sys.argv) - 1:
+                print('Error! You must pass tracer index after -m!')
+                exit()
+            tracer_idx = int(sys.argv[arg_idx + 1])
+            if tracer_idx >= len(tracer_list):
+                print('Invalid tracer index! We only know of', len(tracer_list), '(indices start at 0)')
+                print('You passed:', tracer_idx)
+                exit()
+            tracer_list[tracer_idx].run()
+            arg_idx += 1
+        elif sys.argv[arg_idx] == '-c' or sys.argv[arg_idx] == '--compare':
+            if arg_idx >= len(sys.argv) - 2:
+                print('Error! You must pass two tracer indices after -c!')
+                exit()
+            a_idx = int(sys.argv[arg_idx + 1])
+            b_idx = int(sys.argv[arg_idx + 2])
+            if a_idx >= len(tracer_list) or b_idx >= len(tracer_list):
+                print('Invalid tracer index! We only know of', len(tracer_list), '(indices start at 0)')
+                print('You passed:', a_idx, 'and', b_idx)
+                exit()
+            tracer_list[a_idx].compare_org_trace(tracer_list[b_idx], 0)
+            arg_idx += 2
+        elif sys.argv[arg_idx] == '-h' or sys.argv[arg_idx] == '--help':
+            print_help()
+            exit()
+        else:
+            print('Error! Unknown argument:', sys.argv[arg_idx])
+            print('Run with -h or --help to see possible args')
+            exit()
+
+        arg_idx += 1
