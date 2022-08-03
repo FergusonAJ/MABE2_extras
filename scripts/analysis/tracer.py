@@ -338,7 +338,7 @@ if __name__ == '__main__':
                     str(len(tracer_list) - 1) + ': ' + trace_filename)
         elif sys.argv[arg_idx] == '-t' or sys.argv[arg_idx] == '--trace':
             if arg_idx == len(sys.argv) - 1:
-                print('Error! You must pass tracer index after -m!')
+                print('Error! You must pass tracer index after -t!')
                 exit()
             tracer_idx = int(sys.argv[arg_idx + 1])
             if tracer_idx >= len(tracer_list):
