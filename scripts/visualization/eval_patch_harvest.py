@@ -32,6 +32,28 @@ class Agent:
             self.row_idx += 1
         elif self.facing == 7: # West
             self.col_idx -= 1
+    
+    def move_back(self):
+        if self.facing == 0:   # Northwest
+            self.col_idx += 1
+            self.row_idx += 1
+        elif self.facing == 1: # North
+            self.row_idx += 1
+        elif self.facing == 2: # Northeast
+            self.col_idx -= 1
+            self.row_idx += 1
+        elif self.facing == 3: # East
+            self.col_idx -= 1
+        elif self.facing == 4: # Southeast
+            self.col_idx -= 1
+            self.row_idx -= 1
+        elif self.facing == 5: # South
+            self.row_idx -= 1
+        elif self.facing == 6: # Southwest
+            self.col_idx += 1
+            self.row_idx -= 1
+        elif self.facing == 7: # West
+            self.col_idx += 1
 
     def rotate_right(self):
         self.facing += 1
@@ -174,6 +196,8 @@ if __name__ == '__main__':
                 animator.rotate_left()
             elif movement_str[idx] == 'M':
                 animator.move()
+            elif movement_str[idx] == 'B':
+                animator.move_back()
 
     move_idx = 0
     playing = False
