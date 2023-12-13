@@ -2,6 +2,7 @@ import pygame
 import sys 
 import math
 import time
+import os
 
 
 class Agent:
@@ -66,7 +67,7 @@ class Agent:
 
 
 class PatchHarvestAnimator:
-    def __init__(self, map_filename):
+    def __init__(self, map_filename, flip_y = False):
         self.map_filename = map_filename
         self.metadata = {}
         self.load_map()
@@ -74,11 +75,15 @@ class PatchHarvestAnimator:
         self.setup_color_map()
         #self.agent = Agent(self.get_map_width() // 2, self.get_map_height() // 2, 1)
         #self.agent = Agent(34, 25, 3)
-        start_y = int(self.metadata['height']) - int(self.metadata['start_y']) - 1
+        if flip_y: 
+            start_y = int(self.metadata['height']) - int(self.metadata['start_y']) - 1
+        else:
+            start_y = int(self.metadata['start_y'])
         self.agent = Agent(
                 int(self.metadata['start_x']),
                 start_y,
                 int(self.metadata['start_facing']))
+        self.start_pos = (int(self.metadata['start_x']), start_y)
         self.consume()
         self.trace_points = []
         self.add_trace()
@@ -125,11 +130,11 @@ class PatchHarvestAnimator:
         self.color_map['E'] = (200,200,0)
         self.color_map['N'] = (0,150,200)
         self.color_map['.'] = (150,150,150)
-        self.color_map['R'] = (200,50,0)
+        self.color_map['O'] = (200,50,0)
         self.color_map['L'] = (0,50,200)
         self.color_map['+'] = (255,255,255)
         self.color_map['X'] = (50,200,50)
-        self.color_map['O'] = (200,200,0)
+        self.color_map['R'] = (200,200,0)
     
     def get_map_width(self):
         return len(self.map_data[0])
@@ -151,15 +156,19 @@ class PatchHarvestAnimator:
 
     def move(self):
         self.agent.move()
-        self.agent.row_idx = max(min(self.agent.row_idx, self.get_map_height() - 1), 0)
-        self.agent.col_idx = max(min(self.agent.col_idx, self.get_map_width() - 1), 0)
+        #self.agent.row_idx = max(min(self.agent.row_idx, self.get_map_height() - 1), 0)
+        #self.agent.col_idx = max(min(self.agent.col_idx, self.get_map_width() - 1), 0)
+        self.agent.row_idx = self.agent.row_idx % self.get_map_height()
+        self.agent.col_idx = self.agent.col_idx % self.get_map_width()
         self.consume()
         self.add_trace()
     
     def move_back(self):
         self.agent.move_back()
-        self.agent.row_idx = max(min(self.agent.row_idx, self.get_map_height() - 1), 0)
-        self.agent.col_idx = max(min(self.agent.col_idx, self.get_map_width() - 1), 0)
+        #self.agent.row_idx = max(min(self.agent.row_idx, self.get_map_height() - 1), 0)
+        #self.agent.col_idx = max(min(self.agent.col_idx, self.get_map_width() - 1), 0)
+        self.agent.row_idx = self.agent.row_idx % self.get_map_height()
+        self.agent.col_idx = self.agent.col_idx % self.get_map_width()
         self.consume()
         self.add_trace()
 
@@ -182,6 +191,11 @@ class PatchHarvestAnimator:
                 #pygame.draw.rect(screen, col, \
                 #        (col_idx * tile_width + 1, row_idx * tile_height + 1, \
                 #            tile_width - 1, tile_height - 1))
+        # Draw start position
+        pygame.draw.circle(screen, (200,0,0), \
+                ((self.start_pos[0] + 0.5) * tile_width, \
+                    (self.start_pos[1] + 0.5) * tile_height), \
+                3 * tile_width / 8)
         # Draw trace
         for i in range(1, len(self.trace_points)):
             x1, y1 = self.trace_points[i]
@@ -191,8 +205,11 @@ class PatchHarvestAnimator:
             x2 += 0.5
             y2 += 0.5
             color = (50 + (200 * i / len(self.trace_points)), 0, 0)
-            pygame.draw.line(screen, color, \
-                    (x1 * tile_width, y1 * tile_height), (x2 * tile_width, y2 * tile_height))
+            if abs(x2 - x1) <= 1 and abs(y2 - y1) <= 1:
+                pygame.draw.line(screen, color,
+                        (x1 * tile_width, y1 * tile_height), 
+                        (x2 * tile_width, y2 * tile_height), 
+                        3)
         # Draw agent
         surf = pygame.Surface((tile_width, tile_height))
         surf.set_colorkey((0,0,0))
@@ -242,17 +259,32 @@ if __name__ == '__main__':
         #movement_str = load_movement_file(sys.argv[2])
         movement_str = sys.argv[2]
     
+    flip_map = False
+    if '-f' in sys.argv:
+        flip_map = True
+        sys.argv.remove('-f')
+    
     output_filename = None
     if len(sys.argv) > 3:
         output_filename = sys.argv[3]
 
-    animator = PatchHarvestAnimator(map_filename)
+    gif_dir = None
+    if len(sys.argv) > 4:
+        gif_dir = sys.argv[4]
+        if not os.path.isdir(gif_dir):
+            os.mkdir(gif_dir)
+
+
+    animator = PatchHarvestAnimator(map_filename, flip_map)
 
     screen_width = 800
     screen_height = 800
 
     pygame.init()
-    screen = pygame.display.set_mode((screen_width, screen_height))
+    if output_filename is not None:
+        screen = pygame.Surface((screen_width, screen_height))
+    else:
+        screen = pygame.display.set_mode((screen_width, screen_height))
 
     def process_move(idx):
         if idx < len(movement_str):
@@ -273,8 +305,11 @@ if __name__ == '__main__':
     if output_filename is not None:
         while move_idx < len(movement_str):
             process_move(move_idx)
+            animator.render(screen)
+            if gif_dir is not None:
+                frame_filename = gif_dir + '/frame_' + str(move_idx).zfill(5) + '.png'
+                pygame.image.save(screen, frame_filename)
             move_idx += 1
-        animator.render(screen)
         pygame.image.save(screen, output_filename)
         print('Image saved to:', output_filename)
         pygame.quit()
